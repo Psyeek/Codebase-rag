@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install lightweight CPU-only PyTorch first (saves ~1GB download and cuts RAM usage)
 RUN pip install --no-cache-dir "numpy<2" && \
-    pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+    pip install --no-cache-dir torch --extra-index-url https://download.pytorch.org/whl/cpu
 
 # Install remaining python dependencies
 COPY requirements.txt .
