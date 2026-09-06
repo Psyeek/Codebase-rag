@@ -1,0 +1,219 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* 1. LATTICE THEME (Anduril Defense Stark Black) */
+[data-theme="lattice"], :root {
+  --bg-app: #050505;
+  --bg-surface: #090909;
+  --bg-elevated: #111111;
+  --bg-card: #0c0c0c;
+  --bg-input: #090909;
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.25);
+  --text-main: #ededed;
+  --text-muted: #737373;
+  --text-secondary: #a3a3a3;
+  --text-heading: #ffffff;
+  --accent-btn-bg: #ffffff;
+  --accent-btn-text: #050505;
+  --accent-btn-hover: #e5e5e5;
+  --accent-badge: #ffffff;
+  --grid-line: rgba(255, 255, 255, 0.03);
+  --code-bg: #070707;
+  --code-header: #0e0e0e;
+  --hero-filter: contrast(125%);
+}
+
+/* 2. GITHUB THEME (Universe Obsidian & Neon) */
+[data-theme="github"] {
+  --bg-app: #0d1117;
+  --bg-surface: #161b22;
+  --bg-elevated: #21262d;
+  --bg-card: #161b22;
+  --bg-input: #0d1117;
+  --border-subtle: #30363d;
+  --border-strong: #58a6ff;
+  --text-main: #f0f6fc;
+  --text-muted: #8b949e;
+  --text-secondary: #c9d1d9;
+  --text-heading: #58a6ff;
+  --accent-btn-bg: #238636;
+  --accent-btn-text: #ffffff;
+  --accent-btn-hover: #2ea043;
+  --accent-badge: #58a6ff;
+  --grid-line: rgba(56, 189, 248, 0.04);
+  --code-bg: #090d13;
+  --code-header: #161b22;
+  --hero-filter: none;
+}
+
+/* 3. TACTICAL AMBER THEME (Retro-Futuristic CRT) */
+[data-theme="amber"] {
+  --bg-app: #090601;
+  --bg-surface: #120c02;
+  --bg-elevated: #1a1204;
+  --bg-card: #120c02;
+  --bg-input: #090601;
+  --border-subtle: rgba(245, 158, 11, 0.22);
+  --border-strong: rgba(245, 158, 11, 0.55);
+  --text-main: #fef3c7;
+  --text-muted: #b45309;
+  --text-secondary: #fcd34d;
+  --text-heading: #fbbf24;
+  --accent-btn-bg: #f59e0b;
+  --accent-btn-text: #090601;
+  --accent-btn-hover: #d97706;
+  --accent-badge: #f59e0b;
+  --grid-line: rgba(245, 158, 11, 0.04);
+  --code-bg: #070401;
+  --code-header: #120c02;
+  --hero-filter: sepia(100%) hue-rotate(355deg) saturate(250%);
+}
+
+/* 4. MINIMAL LIGHT / PAPER THEME */
+[data-theme="light"] {
+  --bg-app: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+  --border-subtle: #e2e8f0;
+  --border-strong: #94a3b8;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --text-secondary: #334155;
+  --text-heading: #0f172a;
+  --accent-btn-bg: #0f172a;
+  --accent-btn-text: #ffffff;
+  --accent-btn-hover: #334155;
+  --accent-badge: #0f172a;
+  --grid-line: rgba(0, 0, 0, 0.04);
+  --code-bg: #f8fafc;
+  --code-header: #f1f5f9;
+  --hero-filter: invert(90%) hue-rotate(180deg) contrast(110%);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Precision grid background using dynamic CSS var */
+.tactical-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+}
+
+/* Minimal theme-aware scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-app);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 0px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* Markdown Answer Prose */
+.answer-prose {
+  line-height: 1.7;
+  color: var(--text-secondary);
+  font-size: 0.925rem;
+}
+
+.answer-prose p {
+  margin-bottom: 0.9rem;
+}
+
+.answer-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.answer-prose strong {
+  color: var(--text-heading);
+  font-weight: 600;
+}
+
+.answer-prose code:not(pre code) {
+  font-family: var(--font-mono);
+  background: var(--bg-elevated);
+  color: var(--text-main);
+  padding: 0.15rem 0.4rem;
+  border-radius: 2px;
+  font-size: 0.85em;
+  border: 1px solid var(--border-subtle);
+}
+
+.answer-prose pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 2px;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.825rem;
+  margin: 1.1rem 0;
+}
+
+.answer-prose pre code {
+  color: var(--text-main);
+  background: transparent;
+  padding: 0;
+  border: none;
+}
+
+.answer-prose ul {
+  list-style-type: square;
+  margin-left: 1.25rem;
+  margin-bottom: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.answer-prose ol {
+  list-style-type: decimal;
+  margin-left: 1.25rem;
+  margin-bottom: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.answer-prose li {
+  margin-bottom: 0.35rem;
+}
+
+.answer-prose h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 0.35rem;
+}
+
+.answer-prose h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-top: 1rem;
+  margin-bottom: 0.35rem;
+}
