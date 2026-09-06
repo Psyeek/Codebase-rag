@@ -8,14 +8,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install python dependencies
-COPY requirements.txt .
+# Install lightweight CPU-only PyTorch first (saves ~1GB download and cuts RAM usage)
 RUN pip install --no-cache-dir "numpy<2" && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
+# Install remaining python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Pre-download and cache embedding model inside Docker image during build
+# This avoids runtime downloads, network timeouts, and HuggingFace rate limits
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
 # Copy source code
 COPY . .
 
-# Run production WSGI server: 1 worker + 4 threads preserves RAM while handling concurrent queries.
-# Timeout of 180s supports repo cloning & batch embedding operations.
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "--timeout", "180", "app:app"]
+# Run production WSGI server: 1 worker + 2 threads fits within Render's 512MB RAM
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "2", "--timeout", "300", "app:app"]

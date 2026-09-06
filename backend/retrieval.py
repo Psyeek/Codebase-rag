@@ -1,7 +1,14 @@
+import torch
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from pgvector.psycopg2 import register_vector
 from db import get_db_connection
+
+# Constrain PyTorch thread pool to prevent memory amplification in constrained containers
+try:
+    torch.set_num_threads(1)
+except Exception:
+    pass
 
 MODEL_NAME = "all-MiniLM-L6-v2"
 _model = None
@@ -23,7 +30,8 @@ def retrieve_chunks(question: str, top_k: int = 5):
         return [], []
 
     model = get_embedding_model()
-    query_emb = model.encode(question.strip(), normalize_embeddings=True)
+    with torch.no_grad():
+        query_emb = model.encode(question.strip(), normalize_embeddings=True)
     query_vec = np.array(query_emb, dtype=np.float32)
 
     conn = get_db_connection()

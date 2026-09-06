@@ -6,10 +6,17 @@ import sys
 import tempfile
 from pathlib import Path
 import numpy as np
+import torch
 from sentence_transformers import SentenceTransformer
 from pgvector.psycopg2 import register_vector
 import psycopg2
 from psycopg2.extras import execute_batch
+
+# Limit PyTorch thread pool for memory-constrained cloud environments
+try:
+    torch.set_num_threads(1)
+except Exception:
+    pass
 
 # Import database initialization and connection helper
 from db import init_db, get_db_connection, save_repo_metadata
@@ -160,7 +167,7 @@ def scan_and_chunk_repo(repo_dir: str, max_files: int = MAX_FILES, max_chunks: i
     return chunks_data, total_files_included
 
 
-def store_chunks(chunks_data: list, model: SentenceTransformer, batch_size: int = 128, progress_cb=None):
+def store_chunks(chunks_data: list, model: SentenceTransformer, batch_size: int = 32, progress_cb=None):
     """Generates embeddings locally and stores chunks into PostgreSQL via pgvector."""
     if not chunks_data:
         print("No chunks to store.")
@@ -174,8 +181,9 @@ def store_chunks(chunks_data: list, model: SentenceTransformer, batch_size: int 
         batch = chunks_data[i:i + batch_size]
         texts = [item["content"] for item in batch]
         
-        # Compute embeddings locally in memory first (without holding DB locks)
-        embeddings = model.encode(texts, show_progress_bar=False, normalize_embeddings=True)
+        # Compute embeddings locally in memory with no_grad to minimize RAM
+        with torch.no_grad():
+            embeddings = model.encode(texts, show_progress_bar=False, normalize_embeddings=True)
         
         for item, emb in zip(batch, embeddings):
             batch_records.append((
