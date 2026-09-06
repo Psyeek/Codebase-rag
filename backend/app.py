@@ -89,6 +89,8 @@ def async_ingest_worker(clean_url: str):
         ingest_state["stats"] = stats
         ingest_state["error"] = None
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         ingest_state["is_ingesting"] = False
         ingest_state["stage"] = "error"
         ingest_state["percent"] = 0

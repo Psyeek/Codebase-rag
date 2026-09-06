@@ -167,59 +167,66 @@ def scan_and_chunk_repo(repo_dir: str, max_files: int = MAX_FILES, max_chunks: i
     return chunks_data, total_files_included
 
 
-def store_chunks(chunks_data: list, model: SentenceTransformer, batch_size: int = 32, progress_cb=None):
-    """Generates embeddings locally and stores chunks into PostgreSQL via pgvector."""
+def store_chunks(chunks_data: list, model: SentenceTransformer, batch_size: int = 4, progress_cb=None):
+    """Generates embeddings locally and streams chunks into PostgreSQL in small memory-safe batches."""
     if not chunks_data:
         print("No chunks to store.")
         return
 
+    import gc
     total_chunks = len(chunks_data)
-    batch_records = []
 
-    print(f"--> Computing embeddings with {MODEL_NAME} for {total_chunks} chunks in batches of {batch_size}...")
-    for i in range(0, total_chunks, batch_size):
-        batch = chunks_data[i:i + batch_size]
-        texts = [item["content"] for item in batch]
-        
-        # Compute embeddings locally in memory with no_grad to minimize RAM
-        with torch.no_grad():
-            embeddings = model.encode(texts, show_progress_bar=False, normalize_embeddings=True)
-        
-        for item, emb in zip(batch, embeddings):
-            batch_records.append((
-                item["file_path"],
-                item["chunk_index"],
-                item["content"],
-                np.array(emb, dtype=np.float32)
-            ))
-            
-        processed = min(i + batch_size, total_chunks)
-        print(f"    Computed embeddings {processed} / {total_chunks}")
-        if progress_cb:
-            pct = 30 + int(60 * (processed / total_chunks))
-            progress_cb("embedding", pct, f"Computing embeddings ({processed}/{total_chunks} chunks)...")
-
-    # Fast insertion into PostgreSQL
-    if progress_cb:
-        progress_cb("saving", 92, "Storing chunks in PostgreSQL vector index...")
-
-    print("--> Connecting to database and committing chunks...")
+    print("--> Connecting to PostgreSQL and preparing table...")
     init_db()
     conn = get_db_connection()
     register_vector(conn)
 
+    insert_sql = """
+        INSERT INTO code_chunks (file_path, chunk_index, content, embedding)
+        VALUES (%s, %s, %s, %s)
+    """
+
     try:
         with conn.cursor() as cur:
+            # Clear previous repo chunks before streaming new chunks
             cur.execute("TRUNCATE TABLE code_chunks RESTART IDENTITY;")
-            insert_sql = """
-                INSERT INTO code_chunks (file_path, chunk_index, content, embedding)
-                VALUES (%s, %s, %s, %s)
-            """
-            execute_batch(cur, insert_sql, batch_records)
             conn.commit()
-            print("--> All chunks successfully committed to PostgreSQL!")
+
+            print(f"--> Streaming embeddings with {MODEL_NAME} for {total_chunks} chunks in memory-safe batches of {batch_size}...")
+            for i in range(0, total_chunks, batch_size):
+                batch = chunks_data[i:i + batch_size]
+                texts = [item["content"] for item in batch]
+
+                # Compute small batch of embeddings with no_grad
+                with torch.no_grad():
+                    embeddings = model.encode(texts, show_progress_bar=False, normalize_embeddings=True)
+
+                batch_records = []
+                for item, emb in zip(batch, embeddings):
+                    batch_records.append((
+                        item["file_path"],
+                        item["chunk_index"],
+                        item["content"],
+                        np.array(emb, dtype=np.float32)
+                    ))
+
+                # Immediately commit batch to PostgreSQL and free from memory
+                execute_batch(cur, insert_sql, batch_records)
+                conn.commit()
+
+                del batch, texts, embeddings, batch_records
+                if (i // batch_size) % 4 == 0:
+                    gc.collect()
+
+                processed = min(i + batch_size, total_chunks)
+                if progress_cb:
+                    pct = 28 + int(68 * (processed / total_chunks))
+                    progress_cb("embedding", pct, f"Indexed {processed} / {total_chunks} code chunks...")
+
+        print("--> All chunks successfully committed to PostgreSQL!")
     finally:
         conn.close()
+        gc.collect()
 
 
 def ingest(repo_url: str, model: SentenceTransformer = None, progress_cb=None):
